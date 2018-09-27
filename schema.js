@@ -1,28 +1,16 @@
-const { buildSchema } = require('graphql');
 const { apiseeds, genius } = require('./config/keys');
+const { buildSchema } = require('graphql');
 const fetch = require('node-fetch');
+const _ = require('lodash');
+const Q = require('q');
 const {
-    GraphQLInt,
-    GraphQLList,
-    GraphQLSchema,
+    GraphQLObjectType,
     GraphQLString,
-    GraphQLObjectType
+    GraphQLVarial,
+    GraphQLSchema,
+    GraphQLList,
+    GraphQLInt
 } = require('graphql');
-
-const lyricType = new GraphQLObjectType({
-    name: 'Lyrics',
-    description: '...',
-    fields: () => ({
-        name: {
-            type: GraphQLString,
-            resolve: res => res.result.track.name
-        },
-        text: {
-            type: GraphQLString,
-            resolve: res => res.result.track.text
-        }
-    })
-});
 
 const searchHitType = new GraphQLObjectType({
     name: 'hit',
@@ -39,9 +27,17 @@ const searchHitType = new GraphQLObjectType({
             resolve: res => {
                 return res.result.primary_artist.name;
             }
+        },
+        lyrics: {
+            type: GraphQLString,
+            resolve: res => {
+                return fetch(`https://orion.apiseeds.com/api/music/lyric/${res.result.primary_artist.name}/${res.result.title}?apikey=${apiseeds}`)
+                .then(res => res.json())
+                .then(res => res.result ? res.result.track.text : null);
+            }
         }
     })
-})
+});
 
 const searchType = new GraphQLObjectType({
     name: 'Search',
@@ -54,24 +50,13 @@ const searchType = new GraphQLObjectType({
             }
         }
     })
-})
+});
 
 module.exports = new GraphQLSchema({
     query: new GraphQLObjectType({
         name: 'Query',
         description: '...',
         fields: () => ({
-            lyrics: {
-                type: lyricType,
-                args: {
-                    artist: { type: GraphQLString },
-                    song: { type: GraphQLString }
-                },
-                resolve: (root, args) => {
-                    return fetch(`https://orion.apiseeds.com/api/music/lyric/${args.artist}/${args.song}?apikey=${apiseeds}`)
-                    .then(res => res.json())
-                }
-            },
             search: {
                 type: searchType,
                 args: {
@@ -79,7 +64,9 @@ module.exports = new GraphQLSchema({
                 },
                 resolve: (root, args) => {
                     return fetch(`https://api.genius.com/search?q=${args.userInput}&access_token=${genius}`)
-                    .then(res => res.json())
+                    .then(searchHits => {
+                        return searchHits.json()
+                    })
                 }
             }
         })
