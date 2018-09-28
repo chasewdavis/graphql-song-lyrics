@@ -12,6 +12,20 @@ const {
     GraphQLInt
 } = require('graphql');
 
+const lyricsType = new GraphQLObjectType({
+    name: 'lyrics',
+    description: '...',
+    fields: () => ({
+        lyrics: {
+            type: GraphQLString,
+            resolve: res => {
+                console.log('RESSSSS', res);
+                return res.result ? res.result.track.text : null;
+            }
+        }
+    })
+});
+
 const searchHitType = new GraphQLObjectType({
     name: 'hit',
     description: '...',
@@ -67,6 +81,18 @@ module.exports = new GraphQLSchema({
                     .then(searchHits => {
                         return searchHits.json()
                     })
+                }
+            },
+            lyrics: {
+                type: lyricsType,
+                args: {
+                    artist: { type: GraphQLString },
+                    title: { type: GraphQLString }
+                },
+                resolve: (root, args) => {
+                    return fetch(`https://orion.apiseeds.com/api/music/lyric/${args.artist}/${args.title}?apikey=${apiseeds}`)
+                    .then(res => res.json())
+                    // .then(res => res.result ? res.result.track.text : null);
                 }
             }
         })
