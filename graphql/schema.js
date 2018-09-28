@@ -19,7 +19,6 @@ const lyricsType = new GraphQLObjectType({
         lyrics: {
             type: GraphQLString,
             resolve: res => {
-                console.log('RESSSSS', res);
                 return res.result ? res.result.track.text : null;
             }
         }
